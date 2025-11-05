@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+- Backtesting results must include:
+  • Win rate (%)
+  • Average R multiple
+  • Net profit/loss
+  • Max drawdown
+  • Longest win/loss streak
+  • Equity curve data
+- Log every valid trade setup in a CSV or JSON file under /logs/.
+- Include timestamp, symbol, direction, entry, stop, take profit, R multiple, position size, and result.
+- Backtester must be deterministic — same data input = same result.

@@ -1,0 +1,75 @@
+{
+  "environment": "demo",
+  "account": {
+    "size": 150000,
+    "max_risk_per_trade": 0.5,
+    "daily_loss_limit": 1500,
+    "enabled_instruments": ["MNQ", "MES", "MGC", "MCL", "MYM"]
+  },
+  "tradovate": {
+    "demo": {
+      "base_url": "https://demo.tradovateapi.com",
+      "auth_url": "https://demo.tradovateapi.com/auth/oauthtoken",
+      "client_id": "YOUR_DEMO_CLIENT_ID",
+      "client_secret": "YOUR_DEMO_CLIENT_SECRET",
+      "username": "YOUR_DEMO_USERNAME",
+      "password": "YOUR_DEMO_PASSWORD"
+    },
+    "live": {
+      "base_url": "https://live.tradovateapi.com",
+      "auth_url": "https://live.tradovateapi.com/auth/oauthtoken",
+      "client_id": "YOUR_LIVE_CLIENT_ID",
+      "client_secret": "YOUR_LIVE_CLIENT_SECRET",
+      "username": "YOUR_LIVE_USERNAME",
+      "password": "YOUR_LIVE_PASSWORD"
+    }
+  },
+  "icc": {
+    "min_r_multiple": 2.0,
+    "preferred_r_multiple": 3.0,
+    "atr_multiplier": 1.5
+  },
+  "restricted_events": [
+    "FOMC",
+    "NFP",
+    "CPI"
+  ],
+  "instruments": {
+    "MNQ": {
+      "symbol": "MNQ",
+      "name": "Micro E-mini NASDAQ-100",
+      "tick_size": 0.25,
+      "tick_value": 0.50,
+      "contract_size": 1
+    },
+    "MES": {
+      "symbol": "MES",
+      "name": "Micro E-mini S&P 500",
+      "tick_size": 0.25,
+      "tick_value": 0.50,
+      "contract_size": 1
+    },
+    "MGC": {
+      "symbol": "MGC",
+      "name": "Micro Gold",
+      "tick_size": 0.10,
+      "tick_value": 1.00,
+      "contract_size": 1
+    },
+    "MCL": {
+      "symbol": "MCL",
+      "name": "Micro Crude Oil",
+      "tick_size": 0.01,
+      "tick_value": 1.00,
+      "contract_size": 1
+    },
+    "MYM": {
+      "symbol": "MYM",
+      "name": "Micro E-mini Dow Jones",
+      "tick_size": 1.00,
+      "tick_value": 0.50,
+      "contract_size": 1
+    }
+  }
+}
+

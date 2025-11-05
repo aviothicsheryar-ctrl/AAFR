@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+- Prefer generating code incrementally (module by module) rather than dumping full projects at once.
+- When user asks for an update, modify existing functions without deleting unrelated parts.
+- Include `# TODO:` comments where logic is not yet implemented.
+- Suggest test snippets to validate each new function.
+- Default to async-based structure for market data streaming, but keep synchronous fallback options.

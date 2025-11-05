@@ -1,0 +1,37 @@
+AAFR Trading System - Example Trade Output
+===========================================
+
+🟢 TRADE SIGNAL DETECTED for MNQ
+
+LONG MNQ @ 17893.50 | SL 17864.25 | TP1 17965.00 | R=3.1 | Size: 2 MNQ | Risk $480 (0.5% of 150K)
+
+Trade Details:
+- Direction: LONG
+- Entry: 17893.50
+- Stop Loss: 17864.25 (29.25 points below entry)
+- Take Profit: 17965.00 (71.50 points above entry)
+- Risk/Reward Ratio: 1:2.44
+- Position Size: 2 contracts
+- Dollar Risk: $480.00
+- Risk Percentage: 0.32% of $150K account
+- R Multiple: 3.1R
+
+ICC Structure Validation:
+✓ Correction retraced into value zone
+✓ Continuation candle confirmed displacement
+✓ CVD aligned with direction (no divergence)
+✓ R multiple ≥ 2.0 (actual: 3.1)
+✓ Risk ≤ 1% of account (actual: 0.32%)
+
+Trade logged to: logs/trades/trades_20250103.csv
+
+---
+
+Additional Signal Examples:
+
+SHORT ES @ 4456.75 | SL 4482.25 | TP1 4405.50 | R=2.5 | Size: 3 MES | Risk $765 (0.5% of 150K)
+
+LONG GC @ 2038.40 | SL 2029.10 | TP1 2056.90 | R=3.0 | Size: 1 MGC | Risk $930 (0.62% of 150K)
+
+SHORT CL @ 71.85 | SL 72.95 | TP1 70.15 | R=2.2 | Size: 2 MCL | Risk $440 (0.29% of 150K)
+

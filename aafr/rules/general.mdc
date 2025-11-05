@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+- Always write clean, modular, and PEP8-compliant Python code.
+- Use descriptive variable and function names that clearly express intent (e.g., detect_indication_structure, calculate_cvd_alignment).
+- All modules must include docstrings explaining purpose, inputs, and outputs.
+- Include inline comments for all key logic, especially financial or mathematical calculations.
+- Avoid unnecessary dependencies — use standard Python libraries unless justified.
+- Prioritize readability and maintainability over brevity.

@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+- The ICC logic must only trigger trades if all five conditions are met:
+  1. Correction retraces into value zone.
+  2. Continuation candle confirms displacement.
+  3. CVD aligns with direction (no divergence).
+  4. R multiple ≥ 2.0.
+  5. Risk ≤ 1% of account.
+- CVD divergence immediately invalidates a signal.
+- Trades must include entry, stop loss, take profit, R multiple, position size, and dollar risk.
+- Use ATR-based stops and enforce 0.5–1% equity risk per trade.
+- Skip setups that do not meet 2R minimum projection.
+- Do not execute or simulate trades during restricted events (FOMC, NFP, CPI).

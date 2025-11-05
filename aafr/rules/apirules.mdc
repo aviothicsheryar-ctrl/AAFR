@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+- Always use the Tradovate Demo API base URL for testing:
+  https://demo.tradovateapi.com
+- Never expose client ID, secret, or credentials in code output.
+- Implement a safe fallback (mock data loader) when API is unavailable.
+- All API interactions must be wrapped in try/except blocks with graceful error messages.
+- Keep environment switching simple:
+  MODE=demo or MODE=live loads from config.json automatically.

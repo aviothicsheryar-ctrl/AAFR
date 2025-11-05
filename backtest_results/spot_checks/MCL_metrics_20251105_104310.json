@@ -1,0 +1,33 @@
+{
+  "total_trades": 0,
+  "win_rate": 0.0,
+  "avg_r": 0.0,
+  "net_pnl": 0.0,
+  "max_drawdown": 0.0,
+  "max_drawdown_pct": 0.0,
+  "longest_win_streak": 0,
+  "longest_loss_streak": 0,
+  "final_equity": 150000.0,
+  "profit_factor": 0.0,
+  "sharpe_ratio": 0.0,
+  "avg_win": 0.0,
+  "avg_loss": 0.0,
+  "avg_win_r": 0.0,
+  "avg_loss_r": 0.0,
+  "gross_profit": 0.0,
+  "gross_loss": 0.0,
+  "equity_curve_summary": {
+    "min_equity": 150000.0,
+    "max_equity": 150000.0,
+    "peak_equity_date": null,
+    "peak_equity_value": 150000.0
+  },
+  "backtest_metadata": {
+    "start_time": "2025-11-05 10:43:09.067298",
+    "end_time": "2025-11-05 10:43:09.303243",
+    "duration_seconds": 0.235945,
+    "symbol": "MCL",
+    "start_equity": 150000.0,
+    "candles_analyzed": 1000
+  }
+}

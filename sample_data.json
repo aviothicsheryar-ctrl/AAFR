@@ -1,0 +1,48 @@
+[
+  {
+    "timestamp": 0,
+    "open": 18000.0,
+    "high": 18005.0,
+    "low": 17995.0,
+    "close": 18003.0,
+    "volume": 5000,
+    "symbol": "MNQ"
+  },
+  {
+    "timestamp": 1,
+    "open": 18003.0,
+    "high": 18010.0,
+    "low": 18000.0,
+    "close": 18008.0,
+    "volume": 6000,
+    "symbol": "MNQ"
+  },
+  {
+    "timestamp": 2,
+    "open": 18008.0,
+    "high": 18015.0,
+    "low": 18005.0,
+    "close": 18012.0,
+    "volume": 5500,
+    "symbol": "MNQ"
+  },
+  {
+    "timestamp": 3,
+    "open": 18012.0,
+    "high": 18018.0,
+    "low": 18008.0,
+    "close": 18015.0,
+    "volume": 5800,
+    "symbol": "MNQ"
+  },
+  {
+    "timestamp": 4,
+    "open": 18015.0,
+    "high": 18022.0,
+    "low": 18012.0,
+    "close": 18020.0,
+    "volume": 6200,
+    "symbol": "MNQ"
+  }
+]
+

@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- Each new function must include at least one example usage or test call.
+- Validate data types and return values.
+- Simulate at least one NQ trade signal during development to confirm logic integration.
+- Include sample backtest on historical data with dummy candles to verify end-to-end workflow.

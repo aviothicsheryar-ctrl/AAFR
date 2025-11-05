@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+- Maintain a clear project structure:
+  /aafr/
+    ├── main.py
+    ├── icc_module.py
+    ├── cvd_module.py
+    ├── risk_engine.py
+    ├── tradovate_api.py
+    ├── backtester.py
+    ├── utils.py
+    ├── config.json
+    └── logs/
+- Each module should handle a single responsibility (e.g., icc_module.py only handles Indication–Correction–Continuation logic).
+- All configuration data (API keys, account size, mode) should be stored in `.env` or `config.json`, never hardcoded.
+- Use object-oriented design where appropriate (e.g., a TradeSignal class or RiskManager class).

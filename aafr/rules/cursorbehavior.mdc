@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+- Always explain your reasoning when writing or changing code.
+- Before adding new functionality, briefly summarize what it will do and where it fits.
+- When encountering ambiguity in trading logic, default to the most conservative risk assumption.
+- Respond with minimal text + well-commented code unless user explicitly asks for an explanation.
