@@ -7,6 +7,15 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import csv
 import math
+from pathlib import Path
+
+try:
+    import matplotlib
+    matplotlib.use('Agg')  # Use non-interactive backend
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
 
 from aafr.icc_module import ICCDetector
 from aafr.cvd_module import CVDCalculator
@@ -82,8 +91,14 @@ class Backtester:
         
         # Scan through candles for trade setups
         lookahead = 50  # Minimum candles needed for structure detection
+        total_candles = len(candles)
+        progress_interval = max(1000, total_candles // 20)  # Print progress every 5% or every 1000 candles
         
-        for i in range(lookahead, len(candles)):
+        for i in range(lookahead, total_candles):
+            # Print progress for large backtests
+            if i % progress_interval == 0 or i == lookahead:
+                progress_pct = ((i - lookahead) / (total_candles - lookahead)) * 100
+                print(f"[INFO] {symbol}: Processing candle {i}/{total_candles} ({progress_pct:.1f}%) - Trades: {len(self.trades)}")
             # Get history up to current point
             history = candles[:i+1]
             
@@ -119,14 +134,7 @@ class Backtester:
             if not is_risk_valid:
                 continue
             
-            # Calculate actual outcome
-            result = self._simulate_trade_outcome(
-                entry, stop, tp, trade_details['r_multiple'], 
-                trade_details['position_size'], icc_structure['indication']['direction'],
-                candles, i+1  # Start from next candle
-            )
-            
-            # Get timestamp for trade
+            # Get timestamp for trade entry
             trade_timestamp = i
             if i < len(candles):
                 candle_ts = candles[i].get('timestamp', i)
@@ -140,9 +148,19 @@ class Backtester:
             else:
                 trade_dt = datetime.now()
             
+            # Calculate actual outcome (pass entry timestamp)
+            result = self._simulate_trade_outcome(
+                entry, stop, tp, trade_details['r_multiple'], 
+                trade_details['position_size'], icc_structure['indication']['direction'],
+                candles, i+1,  # Start from next candle
+                entry_timestamp=trade_dt  # Pass entry timestamp
+            )
+            
             # Record trade
             trade_record = {
                 'timestamp': trade_dt,
+                'entry_timestamp': trade_dt,
+                'exit_timestamp': result.get('exit_timestamp', trade_dt),
                 'time_index': i,
                 'symbol': symbol,
                 'direction': icc_structure['indication']['direction'],
@@ -155,7 +173,8 @@ class Backtester:
                 'risk_percent': trade_details['risk_percent'],
                 'result': result['pnl'],
                 'r_achieved': result['r_achieved'],
-                'status': 'win' if result['pnl'] > 0 else 'loss'
+                'status': 'win' if result['pnl'] > 0 else 'loss',
+                'duration_minutes': result.get('duration_minutes', 0)
             }
             
             self.trades.append(trade_record)
@@ -254,7 +273,7 @@ class Backtester:
     def _simulate_trade_outcome(self, entry: float, stop: float, tp: float,
                                r_multiple: float, position_size: int,
                                direction: str, candles: List[Dict], 
-                               start_idx: int) -> Dict:
+                               start_idx: int, entry_timestamp: Optional[datetime] = None) -> Dict:
         """
         Simulate trade outcome from historical data.
         
@@ -267,12 +286,25 @@ class Backtester:
             direction: 'LONG' or 'SHORT'
             candles: Remaining candle data
             start_idx: Index to start from
+            entry_timestamp: Timestamp when trade was entered
         
         Returns:
-            Dictionary with pnl and r_achieved
+            Dictionary with pnl, r_achieved, exit_timestamp, and duration_minutes
         """
         if start_idx >= len(candles):
-            return {'pnl': 0, 'r_achieved': 0}
+            return {'pnl': 0, 'r_achieved': 0, 'exit_timestamp': None, 'duration_minutes': 0}
+        
+        # Calculate entry timestamp if not provided (use start_idx candle timestamp)
+        if entry_timestamp is None:
+            entry_candle = candles[start_idx - 1] if start_idx > 0 else candles[0]
+            entry_ts = entry_candle.get('timestamp', start_idx)
+            if isinstance(entry_ts, (int, float)) and entry_ts > 0:
+                try:
+                    entry_timestamp = datetime.fromtimestamp(entry_ts)
+                except (ValueError, OSError):
+                    entry_timestamp = datetime.now()
+            else:
+                entry_timestamp = datetime.now()
         
         # Check remaining candles for stop or TP hit
         for i in range(start_idx, min(start_idx + 100, len(candles))):
@@ -280,28 +312,83 @@ class Backtester:
             high = candle['high']
             low = candle['low']
             
+            # Get exit timestamp from current candle
+            exit_ts = candle.get('timestamp', i)
+            if isinstance(exit_ts, (int, float)) and exit_ts > 0:
+                try:
+                    exit_timestamp = datetime.fromtimestamp(exit_ts)
+                except (ValueError, OSError):
+                    exit_timestamp = datetime.now()
+            else:
+                exit_timestamp = datetime.now()
+            
+            # Calculate duration in minutes
+            duration_delta = exit_timestamp - entry_timestamp
+            duration_minutes = duration_delta.total_seconds() / 60.0
+            
             # Check if stop hit
             if direction == 'LONG' and low <= stop:
                 # Stop loss hit
                 loss = (entry - stop) * position_size
-                return {'pnl': -loss, 'r_achieved': -1.0}
+                return {
+                    'pnl': -loss, 
+                    'r_achieved': -1.0,
+                    'exit_timestamp': exit_timestamp,
+                    'duration_minutes': duration_minutes
+                }
             elif direction == 'SHORT' and high >= stop:
                 # Stop loss hit
                 loss = (stop - entry) * position_size
-                return {'pnl': -loss, 'r_achieved': -1.0}
+                return {
+                    'pnl': -loss, 
+                    'r_achieved': -1.0,
+                    'exit_timestamp': exit_timestamp,
+                    'duration_minutes': duration_minutes
+                }
             
             # Check if TP hit
             if direction == 'LONG' and high >= tp:
                 # Take profit hit
                 profit = (tp - entry) * position_size
-                return {'pnl': profit, 'r_achieved': r_multiple}
+                return {
+                    'pnl': profit, 
+                    'r_achieved': r_multiple,
+                    'exit_timestamp': exit_timestamp,
+                    'duration_minutes': duration_minutes
+                }
             elif direction == 'SHORT' and low <= tp:
                 # Take profit hit
                 profit = (entry - tp) * position_size
-                return {'pnl': profit, 'r_achieved': r_multiple}
+                return {
+                    'pnl': profit, 
+                    'r_achieved': r_multiple,
+                    'exit_timestamp': exit_timestamp,
+                    'duration_minutes': duration_minutes
+                }
         
-        # No outcome (end of data)
-        return {'pnl': 0, 'r_achieved': 0}
+        # No outcome (end of data) - calculate duration from entry to last candle
+        if len(candles) > start_idx:
+            last_candle = candles[-1]
+            exit_ts = last_candle.get('timestamp', len(candles) - 1)
+            if isinstance(exit_ts, (int, float)) and exit_ts > 0:
+                try:
+                    exit_timestamp = datetime.fromtimestamp(exit_ts)
+                except (ValueError, OSError):
+                    exit_timestamp = datetime.now()
+            else:
+                exit_timestamp = datetime.now()
+            duration_delta = exit_timestamp - entry_timestamp
+            duration_minutes = duration_delta.total_seconds() / 60.0
+        else:
+            exit_timestamp = entry_timestamp
+            duration_minutes = 0
+        
+        return {
+            'pnl': 0, 
+            'r_achieved': 0,
+            'exit_timestamp': exit_timestamp,
+            'duration_minutes': duration_minutes
+        }
     
     def _calculate_metrics(self) -> Dict:
         """
@@ -336,6 +423,8 @@ class Backtester:
                 'avg_loss_r': 0.0,
                 'gross_profit': 0.0,
                 'gross_loss': 0.0,
+                'expectancy': 0.0,
+                'avg_trade_duration': 0.0,
                 'equity_curve_summary': {
                     'min_equity': self.current_equity,
                     'max_equity': self.current_equity,
@@ -369,6 +458,15 @@ class Backtester:
         # Average win/loss R multiples
         avg_win_r = sum(t['r_achieved'] for t in winning_trades) / len(winning_trades) if winning_trades else 0.0
         avg_loss_r = abs(sum(t['r_achieved'] for t in losing_trades) / len(losing_trades)) if losing_trades else 0.0
+        
+        # Expectancy: (Win Rate × Avg Win) - (Loss Rate × Avg Loss)
+        win_rate_decimal = win_rate / 100.0
+        loss_rate_decimal = 1.0 - win_rate_decimal
+        expectancy = (win_rate_decimal * avg_win) - (loss_rate_decimal * avg_loss)
+        
+        # Average trade duration
+        durations = [t.get('duration_minutes', 0) for t in self.trades if t.get('duration_minutes', 0) > 0]
+        avg_trade_duration = sum(durations) / len(durations) if durations else 0.0
         
         # Sharpe Ratio (simplified: annualized return / volatility)
         # Calculate returns for each trade
@@ -441,6 +539,8 @@ class Backtester:
             'avg_loss_r': avg_loss_r,
             'gross_profit': gross_profit,
             'gross_loss': gross_loss,
+            'expectancy': expectancy,
+            'avg_trade_duration': avg_trade_duration,
             'equity_curve_summary': equity_curve_summary
         }
     
@@ -476,6 +576,8 @@ class Backtester:
             print(f"Avg Loss R:         {results.get('avg_loss_r', 0.0):.2f}")
             print(f"Gross Profit:       ${results.get('gross_profit', 0.0):.2f}")
             print(f"Gross Loss:         ${results.get('gross_loss', 0.0):.2f}")
+            print(f"Expectancy:         ${results.get('expectancy', 0.0):.2f}")
+            print(f"Avg Trade Duration: {results.get('avg_trade_duration', 0.0):.2f} minutes")
         
         # Equity curve summary
         if 'equity_curve_summary' in results:
@@ -538,6 +640,87 @@ class Backtester:
                 export_data[key] = value
         
         export_json(export_data, file_path)
+    
+    def plot_equity_curve(self, results: Dict, file_path: str, symbol: str = "N/A") -> None:
+        """
+        Plot equity curve and save as PNG file.
+        
+        Args:
+            results: Results dictionary from run_backtest
+            file_path: Path to output PNG file
+            symbol: Trading symbol for title
+        """
+        if not HAS_MATPLOTLIB:
+            print("[WARNING] matplotlib not installed. Skipping equity curve visualization.")
+            return
+        
+        if 'equity_curve' not in results or not results['equity_curve']:
+            print("[WARNING] No equity curve data to plot.")
+            return
+        
+        equity_curve = results['equity_curve']
+        
+        # Extract timestamps and equity values
+        timestamps = []
+        equity_values = []
+        
+        for point in equity_curve:
+            equity_values.append(point['equity'])
+            ts = point.get('timestamp')
+            if isinstance(ts, datetime):
+                timestamps.append(ts)
+            elif isinstance(ts, (int, float)) and ts > 0:
+                try:
+                    timestamps.append(datetime.fromtimestamp(ts))
+                except (ValueError, OSError):
+                    # Fallback to index if timestamp conversion fails
+                    timestamps.append(len(timestamps))
+            else:
+                # Use index as fallback
+                timestamps.append(len(timestamps))
+        
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # Plot equity curve
+        ax.plot(timestamps, equity_values, linewidth=2, color='#2E86AB', label='Equity')
+        
+        # Add drawdown shading
+        if len(equity_values) > 0:
+            max_equity = max(equity_values)
+            drawdown_values = [max_equity - eq for eq in equity_values]
+            ax.fill_between(timestamps, equity_values, max_equity, 
+                          where=[eq <= max_equity for eq in equity_values],
+                          alpha=0.3, color='red', label='Drawdown')
+        
+        # Add starting equity line
+        if equity_values:
+            start_equity = equity_values[0]
+            ax.axhline(y=start_equity, color='gray', linestyle='--', 
+                      linewidth=1, alpha=0.5, label='Starting Equity')
+        
+        # Formatting
+        ax.set_title(f'Equity Curve - {symbol}', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Time', fontsize=12)
+        ax.set_ylabel('Equity ($)', fontsize=12)
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc='best')
+        
+        # Format x-axis dates if we have datetime objects
+        if timestamps and isinstance(timestamps[0], datetime):
+            try:
+                fig.autofmt_xdate()
+            except:
+                pass
+        
+        # Save figure
+        file_path = Path(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        
+        print(f"[OK] Equity curve plot saved to: {file_path}")
 
 
     def run_backtest_batch(self, candles_by_symbol: Dict[str, List[Dict]], 

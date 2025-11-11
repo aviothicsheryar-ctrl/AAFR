@@ -1,0 +1,70 @@
+{
+    "objective": "Confirm that the AAFR signal engine, indicator logic, and data flow all work correctly using mock or demo data before connecting to any live account.",
+    "environment": {
+      "workspace": "AAFR development environment",
+      "data_feed": "Mock or demo data (NQ recommended)",
+      "modules_required": [
+        "icc_module (Indication–Correction–Continuation pattern recognition)",
+        "cvd_module (Cumulative Volume Delta accumulation logic)",
+        "risk_engine (Position sizing, R-multiple, trailing stops)",
+        "signal_dispatcher (Output handler for trade JSON and Telegram alerts)"
+      ],
+      "success_criteria": "All modules import and initialize without error."
+    },
+    "tests": {
+      "1_icc_structure_validation": {
+        "description": "Compare AAFR ICC-detected zones to manually marked chart zones.",
+        "steps": [
+          "Manually label Indication, Correction, and Continuation zones on chart.",
+          "Run AAFR ICC scan on same mock dataset.",
+          "Compare output with manual labels."
+        ],
+        "success_criteria": "≥ 90% zone match accuracy."
+      },
+      "2_cvd_alignment_validation": {
+        "description": "Verify that CVD volume movement confirms ICC continuation points.",
+        "steps": [
+          "Enable CVD overlay feed in the mock data module.",
+          "Visually verify that volume delta direction matches continuation phase.",
+          "Log divergence or alignment for each setup."
+        ],
+        "success_criteria": "CVD and price align at every continuation trigger."
+      },
+      "3_risk_engine_validation": {
+        "description": "Simulate trades and verify position sizing, R-multiples, and trailing stop logic.",
+        "steps": [
+          "Run simulated trade batch using risk engine.",
+          "Ensure R-multiple ≥ 2.5 per trade.",
+          "Check trailing stop activates at +1 R and updates according to defined tiers."
+        ],
+        "success_criteria": "All calculations accurate; no trades exceed 1% risk."
+      },
+      "4_signal_output_validation": {
+        "description": "Check JSON output formatting, timestamp precision, and latency.",
+        "steps": [
+          "Generate trade signals through AAFR engine.",
+          "Inspect each signal's JSON structure for required fields: symbol, direction, entry, stop, tp, r_multiple, risk_dollar, timestamp.",
+          "Measure generation latency between signal trigger and log entry."
+        ],
+        "success_criteria": "Latency < 200ms; JSON schema valid."
+      },
+      "5_logging_and_storage_validation": {
+        "description": "Confirm all validation results are saved properly.",
+        "steps": [
+          "Check 'AAFR/logs/validation/' directory.",
+          "Ensure all ICC, CVD, and trade validation logs exist with timestamps.",
+          "Confirm JSON, CSV, and console logs are consistent."
+        ],
+        "success_criteria": "All logs present and readable; filenames include validation date."
+      }
+    },
+    "final_validation_summary": {
+      "pass_conditions": [
+        "All 5 test modules pass success criteria.",
+        "No errors in data flow or signal generation.",
+        "Risk, ICC, and CVD subsystems verified stable under mock data."
+      ],
+      "result": "System ready for Day 3 – Multi-instrument backtesting and live signal integration."
+    }
+  }
+  

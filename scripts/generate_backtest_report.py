@@ -164,6 +164,116 @@ def generate_summary_report(all_results: Dict[str, Dict], output_file: Path) -> 
             for symbol, pf in sorted_by_pf:
                 f.write(f"- **{symbol}**: {pf:.2f}\n")
         
+        # Variance Analysis
+        f.write("\n---\n\n")
+        f.write("## Variance Analysis\n\n")
+        
+        # Calculate statistics
+        metrics_to_analyze = {
+            'win_rate': [r['win_rate'] for r in all_results.values()],
+            'avg_r': [r['avg_r'] for r in all_results.values()],
+            'profit_factor': [r.get('profit_factor', 0.0) for r in all_results.values()],
+            'sharpe_ratio': [r.get('sharpe_ratio', 0.0) for r in all_results.values()],
+            'max_drawdown_pct': [r['max_drawdown_pct'] for r in all_results.values()],
+            'net_pnl': [r['net_pnl'] for r in all_results.values()]
+        }
+        
+        if 'expectancy' in next(iter(all_results.values())):
+            metrics_to_analyze['expectancy'] = [r.get('expectancy', 0.0) for r in all_results.values()]
+        
+        import statistics
+        
+        f.write("### Statistical Summary\n\n")
+        f.write("| Metric | Mean | Std Dev | Min | Max | Best Instrument | Worst Instrument |\n")
+        f.write("|--------|------|---------|-----|-----|----------------|------------------|\n")
+        
+        for metric_name, values in metrics_to_analyze.items():
+            if not values:
+                continue
+            
+            mean_val = statistics.mean(values)
+            std_val = statistics.stdev(values) if len(values) > 1 else 0.0
+            min_val = min(values)
+            max_val = max(values)
+            
+            # Find best and worst instruments
+            best_symbol = None
+            worst_symbol = None
+            best_val = None
+            worst_val = None
+            
+            for symbol, r in all_results.items():
+                if metric_name == 'win_rate':
+                    val = r['win_rate']
+                elif metric_name == 'avg_r':
+                    val = r['avg_r']
+                elif metric_name == 'profit_factor':
+                    val = r.get('profit_factor', 0.0)
+                elif metric_name == 'sharpe_ratio':
+                    val = r.get('sharpe_ratio', 0.0)
+                elif metric_name == 'max_drawdown_pct':
+                    val = r['max_drawdown_pct']
+                elif metric_name == 'net_pnl':
+                    val = r['net_pnl']
+                elif metric_name == 'expectancy':
+                    val = r.get('expectancy', 0.0)
+                else:
+                    continue
+                
+                if best_val is None or val > best_val:
+                    best_val = val
+                    best_symbol = symbol
+                if worst_val is None or val < worst_val:
+                    worst_val = val
+                    worst_symbol = symbol
+            
+            # Format values
+            if metric_name in ['win_rate', 'max_drawdown_pct']:
+                mean_str = f"{mean_val:.2f}%"
+                std_str = f"{std_val:.2f}%"
+                min_str = f"{min_val:.2f}%"
+                max_str = f"{max_val:.2f}%"
+            elif metric_name in ['net_pnl', 'expectancy']:
+                mean_str = f"${mean_val:.2f}"
+                std_str = f"${std_val:.2f}"
+                min_str = f"${min_val:.2f}"
+                max_str = f"${max_val:.2f}"
+            else:
+                mean_str = f"{mean_val:.2f}"
+                std_str = f"{std_val:.2f}"
+                min_str = f"{min_val:.2f}"
+                max_str = f"{max_val:.2f}"
+            
+            f.write(f"| {metric_name} | {mean_str} | {std_str} | {min_str} | {max_str} | {best_symbol} | {worst_symbol} |\n")
+        
+        # Performance Variance Summary
+        f.write("\n### Performance Variance Summary\n\n")
+        
+        # Best performing instruments
+        f.write("**Best Performing Instruments:**\n\n")
+        net_pnls = {sym: r['net_pnl'] for sym, r in all_results.items()}
+        sorted_by_pnl = sorted(net_pnls.items(), key=lambda x: x[1], reverse=True)
+        
+        for i, (symbol, pnl) in enumerate(sorted_by_pnl[:3], 1):
+            f.write(f"{i}. **{symbol}**: ${pnl:.2f} net P&L\n")
+        
+        # Most consistent instruments (lowest drawdown)
+        f.write("\n**Most Consistent Instruments (Lowest Drawdown):**\n\n")
+        drawdowns = {sym: r['max_drawdown_pct'] for sym, r in all_results.items()}
+        sorted_by_dd = sorted(drawdowns.items(), key=lambda x: x[1])
+        
+        for i, (symbol, dd) in enumerate(sorted_by_dd[:3], 1):
+            f.write(f"{i}. **{symbol}**: {dd:.2f}% max drawdown\n")
+        
+        # Volatility Analysis
+        f.write("\n**Volatility Analysis:**\n\n")
+        sharpe_ratios = {sym: r.get('sharpe_ratio', 0.0) for sym, r in all_results.items()}
+        sorted_by_sharpe = sorted(sharpe_ratios.items(), key=lambda x: x[1], reverse=True)
+        
+        f.write("Ranking by Sharpe Ratio (Risk-Adjusted Returns):\n")
+        for i, (symbol, sr) in enumerate(sorted_by_sharpe, 1):
+            f.write(f"{i}. **{symbol}**: {sr:.2f}\n")
+        
         f.write("\n---\n\n")
         f.write(f"*Report generated by AAFR Backtest System*\n")
 
@@ -183,7 +293,8 @@ def generate_csv_summary(all_results: Dict[str, Dict], output_file: Path) -> Non
         'avg_r', 'net_pnl', 'final_equity', 'max_drawdown', 'max_drawdown_pct',
         'longest_win_streak', 'longest_loss_streak',
         'profit_factor', 'sharpe_ratio', 'avg_win', 'avg_loss',
-        'avg_win_r', 'avg_loss_r', 'gross_profit', 'gross_loss'
+        'avg_win_r', 'avg_loss_r', 'gross_profit', 'gross_loss',
+        'expectancy', 'avg_trade_duration'
     ]
     
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -214,7 +325,9 @@ def generate_csv_summary(all_results: Dict[str, Dict], output_file: Path) -> Non
                 'avg_win_r': r.get('avg_win_r', 0.0),
                 'avg_loss_r': r.get('avg_loss_r', 0.0),
                 'gross_profit': r.get('gross_profit', 0.0),
-                'gross_loss': r.get('gross_loss', 0.0)
+                'gross_loss': r.get('gross_loss', 0.0),
+                'expectancy': r.get('expectancy', 0.0),
+                'avg_trade_duration': r.get('avg_trade_duration', 0.0)
             }
             writer.writerow(row)
 
@@ -227,9 +340,10 @@ def main():
     print("GENERATING BACKTEST SUMMARY REPORT")
     print("="*70)
     
-    # Load results from both directories
+    # Load results from all directories
     nq_dir = Path("backtest_results/nq_full")
     spot_dir = Path("backtest_results/spot_checks")
+    deep_dir = Path("backtest_results/deep_backtest")
     
     all_results = {}
     
@@ -244,6 +358,11 @@ def main():
         spot_results = load_backtest_results(spot_dir)
         all_results.update(spot_results)
         print(f"[OK] Loaded {len(spot_results)} results from spot_checks")
+    
+    if deep_dir.exists():
+        deep_results = load_backtest_results(deep_dir)
+        all_results.update(deep_results)
+        print(f"[OK] Loaded {len(deep_results)} results from deep_backtest")
     
     if not all_results:
         print("[ERROR] No backtest results found")

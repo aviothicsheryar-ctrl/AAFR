@@ -21,7 +21,7 @@ def main():
     print("="*70)
     print("\nSending test message to Telegram...\n")
     
-    test_message = "Test message from AAFR Telegram Bot - connection successful!"
+    test_message = "Test message from AAFR Telegram Bot - connection successful! Test Done By sherry-dev."
     
     success = send_telegram_alert(test_message)
     

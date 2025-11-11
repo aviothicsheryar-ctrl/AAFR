@@ -14,7 +14,7 @@ from aafr.cvd_module import CVDCalculator
 from aafr.risk_engine import RiskEngine
 from aafr.tradovate_api import TradovateAPI
 from aafr.backtester import Backtester
-from aafr.utils import format_trade_output, log_trade_signal, load_config, load_candles_from_csv, load_candles_from_json, get_formatted_timestamp
+from aafr.utils import format_trade_output, log_trade_signal, load_config, load_candles_from_csv, load_candles_from_json, get_formatted_timestamp, get_micro_symbol
 from aafr.telegram_bot import send_telegram_alert, format_telegram_message
 
 
@@ -429,7 +429,7 @@ def main():
     parser.add_argument('--mode', choices=['live', 'backtest', 'test', 'analyze'], 
                        default='test', help='Operating mode (analyze: analyze custom data file)')
     parser.add_argument('--symbol', default='MNQ', 
-                       help='Trading symbol')
+                       help='Trading symbol (NQ/ES/GC/CL/YM will be mapped to micro contracts)')
     parser.add_argument('--symbols', nargs='+', 
                        help='Multiple symbols for live mode or backtest')
     parser.add_argument('--instruments', nargs='+',
@@ -440,6 +440,14 @@ def main():
                        help='Path to CSV or JSON file containing candle data')
     
     args = parser.parse_args()
+    
+    # Map symbol to micro contract if needed
+    if args.symbol:
+        args.symbol = get_micro_symbol(args.symbol)
+    if args.symbols:
+        args.symbols = [get_micro_symbol(s) for s in args.symbols]
+    if args.instruments:
+        args.instruments = [get_micro_symbol(s) for s in args.instruments]
     
     # Initialize system
     system = AAFRTradingSystem()
@@ -490,6 +498,7 @@ def main():
             system.analyze_data(candle_data, args.symbol)
             
         elif args.mode == 'live':
+        
             # Start live monitoring
             symbols = args.symbols if args.symbols else [args.symbol]
             asyncio.run(system.start_live_monitoring(symbols))
@@ -502,7 +511,7 @@ def main():
             # Test API connection
             api = TradovateAPI()
             api.authenticate()
-            
+
             # Test data fetch
             candles = api.get_historical_candles(args.symbol, count=50)
             print(f"\n[OK] Fetched {len(candles)} candles for {args.symbol}")

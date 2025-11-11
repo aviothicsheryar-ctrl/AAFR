@@ -13,6 +13,29 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 
+# Symbol mapping: Full contracts to micro contracts
+SYMBOL_MAPPING = {
+    "NQ": "MNQ",
+    "ES": "MES",
+    "GC": "MGC",
+    "CL": "MCL",
+    "YM": "MYM"
+}
+
+
+def get_micro_symbol(symbol: str) -> str:
+    """
+    Map full contract symbol to micro contract symbol.
+    
+    Args:
+        symbol: Trading symbol (can be full or micro contract)
+    
+    Returns:
+        Micro contract symbol if mapping exists, otherwise original symbol
+    """
+    return SYMBOL_MAPPING.get(symbol.upper(), symbol.upper())
+
+
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     """
     Load configuration from JSON file.
@@ -422,6 +445,166 @@ def generate_mock_candles_for_period(
     return candles
 
 
+def generate_mock_candles_with_icc(
+    symbol: str,
+    months: int = 2,
+    interval_minutes: int = 1,
+    icc_count: int = 3,
+    start_price: Optional[float] = None
+) -> List[Dict]:
+    """
+    Generate mock data with optional ICC patterns for deep backtesting.
+    
+    Supports 1-minute intervals and generates 1-3 months of data.
+    Injects realistic ICC patterns (indication, correction, continuation phases).
+    
+    Args:
+        symbol: Trading symbol (will be mapped to micro contract if needed)
+        months: Number of months of data to generate (1-3)
+        interval_minutes: Candle interval in minutes (default: 1 for 1-minute data)
+        icc_count: Number of ICC patterns to inject (default: 3)
+        start_price: Starting price (defaults to instrument-specific base price)
+    
+    Returns:
+        List of candle dictionaries with timestamps
+    """
+    # Map symbol to micro contract
+    micro_symbol = get_micro_symbol(symbol)
+    
+    # Base prices for different instruments
+    base_prices = {
+        "MNQ": 18000.0,
+        "MES": 4500.0,
+        "MGC": 1900.0,
+        "MCL": 80.0,
+        "MYM": 35000.0
+    }
+    
+    if start_price is None:
+        start_price = base_prices.get(micro_symbol, 1000.0)
+    
+    # Calculate date range
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=months * 30)
+    
+    # Calculate number of candles needed
+    total_minutes = months * 30 * 24 * 60
+    num_candles = total_minutes // interval_minutes
+    
+    # Generate base candles using existing function
+    candles = generate_mock_candles_for_period(
+        start_date, end_date, micro_symbol, interval_minutes
+    )
+    
+    # Limit to num_candles if needed
+    if len(candles) > num_candles:
+        candles = candles[:num_candles]
+    
+    # Inject ICC structures
+    profile = get_instrument_volatility_profile(micro_symbol)
+    volatility = profile.get("base_volatility", 10.0)
+    
+    for _ in range(icc_count):
+        # Find a random starting point (leave room for pattern)
+        min_start = 50
+        max_start = len(candles) - 50
+        if max_start <= min_start:
+            continue
+        
+        start_index = random.randint(min_start, max_start)
+        direction = random.choice(["LONG", "SHORT"])
+        
+        # Create ICC pattern: Indication (3-5 candles), Correction (3-5 candles), Continuation (3-5 candles)
+        indication_length = random.randint(3, 5)
+        correction_length = random.randint(3, 5)
+        continuation_length = random.randint(3, 5)
+        total_pattern_length = indication_length + correction_length + continuation_length
+        
+        if start_index + total_pattern_length >= len(candles):
+            continue
+        
+        # Indication phase: Strong move in direction
+        for i in range(start_index, start_index + indication_length):
+            if i >= len(candles):
+                break
+            candle = candles[i]
+            base_price = candle['close']
+            
+            if direction == "LONG":
+                # Strong upward move
+                move = random.uniform(volatility * 1.5, volatility * 2.5)
+                candle['close'] = round(base_price + move, 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.5)), 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.3)), 2)
+                candle['open'] = round(base_price + random.uniform(-volatility * 0.2, volatility * 0.2), 2)
+            else:
+                # Strong downward move
+                move = random.uniform(volatility * 1.5, volatility * 2.5)
+                candle['close'] = round(base_price - move, 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.5)), 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.3)), 2)
+                candle['open'] = round(base_price + random.uniform(-volatility * 0.2, volatility * 0.2), 2)
+            
+            # Increase volume during indication
+            candle['volume'] = int(candle['volume'] * random.uniform(1.3, 1.8))
+        
+        # Correction phase: Retracement (opposite direction, but not as strong)
+        correction_start = start_index + indication_length
+        for i in range(correction_start, correction_start + correction_length):
+            if i >= len(candles):
+                break
+            candle = candles[i]
+            base_price = candle['close']
+            
+            if direction == "LONG":
+                # Pullback (downward correction)
+                move = random.uniform(volatility * 0.3, volatility * 0.8)
+                candle['close'] = round(base_price - move, 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.3)), 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.2)), 2)
+            else:
+                # Bounce (upward correction)
+                move = random.uniform(volatility * 0.3, volatility * 0.8)
+                candle['close'] = round(base_price + move, 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.3)), 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.2)), 2)
+            
+            # Lower volume during correction
+            candle['volume'] = int(candle['volume'] * random.uniform(0.7, 0.9))
+        
+        # Continuation phase: Resumption in original direction
+        continuation_start = correction_start + correction_length
+        for i in range(continuation_start, continuation_start + continuation_length):
+            if i >= len(candles):
+                break
+            candle = candles[i]
+            base_price = candle['close']
+            
+            if direction == "LONG":
+                # Continue upward
+                move = random.uniform(volatility * 1.0, volatility * 2.0)
+                candle['close'] = round(base_price + move, 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.5)), 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.2)), 2)
+            else:
+                # Continue downward
+                move = random.uniform(volatility * 1.0, volatility * 2.0)
+                candle['close'] = round(base_price - move, 2)
+                candle['low'] = round(min(candle['low'], candle['close'] - random.uniform(0, volatility * 0.5)), 2)
+                candle['high'] = round(max(candle['high'], candle['close'] + random.uniform(0, volatility * 0.2)), 2)
+            
+            # Higher volume during continuation
+            candle['volume'] = int(candle['volume'] * random.uniform(1.2, 1.6))
+        
+        # Update subsequent candles to maintain continuity
+        if continuation_start + continuation_length < len(candles):
+            next_candle = candles[continuation_start + continuation_length]
+            prev_candle = candles[continuation_start + continuation_length - 1]
+            next_candle['open'] = prev_candle['close']
+    
+    return candles
+
+
 def get_formatted_timestamp(dt: Optional[datetime] = None) -> str:
     """
     Get formatted timestamp in ISO format.
@@ -603,6 +786,9 @@ def load_candles_from_json(json_path: str) -> List[Dict]:
                 candle['timestamp'] = int(candle['timestamp'])
             if 'symbol' not in candle:
                 candle['symbol'] = 'MNQ'
+            else:
+                # Map symbol to micro contract if needed
+                candle['symbol'] = get_micro_symbol(candle['symbol'])
         except (ValueError, TypeError) as e:
             raise ValueError(f"Error parsing candle at index {idx}: {e}")
     

@@ -1,5 +1,5 @@
 {
-  "environment": "demo",
+  "environment": "live",
   "account": {
     "size": 150000,
     "max_risk_per_trade": 0.5,
@@ -8,20 +8,20 @@
   },
   "tradovate": {
     "demo": {
-      "base_url": "https://demo.tradovateapi.com",
+      "base_url": "https://demo.tradovateapi.com/v1",
       "auth_url": "https://demo.tradovateapi.com/auth/oauthtoken",
-      "client_id": "YOUR_DEMO_CLIENT_ID",
-      "client_secret": "YOUR_DEMO_CLIENT_SECRET",
-      "username": "YOUR_DEMO_USERNAME",
-      "password": "YOUR_DEMO_PASSWORD"
+      "client_id": "8378",
+      "client_secret": "4202d3a8-3268-4b44-9d95-4a75a9dd6f66",
+      "username": "AafrLive",
+      "password": "AafrAutomation!23"
     },
     "live": {
-      "base_url": "https://live.tradovateapi.com",
+      "base_url": "https://live.tradovateapi.com/v1",
       "auth_url": "https://live.tradovateapi.com/auth/oauthtoken",
-      "client_id": "YOUR_LIVE_CLIENT_ID",
-      "client_secret": "YOUR_LIVE_CLIENT_SECRET",
-      "username": "YOUR_LIVE_USERNAME",
-      "password": "YOUR_LIVE_PASSWORD"
+      "client_id": "8378",
+      "client_secret": "4202d3a8-3268-4b44-9d95-4a75a9dd6f66",
+      "username": "AafrLive",
+      "password": "AafrAutomation!23"
     }
   },
   "icc": {
@@ -70,6 +70,11 @@
       "tick_value": 0.50,
       "contract_size": 1
     }
+  },
+  "backtest_settings": {
+    "default_months_history": 3,
+    "default_interval_minutes": 1,
+    "spot_check_days_history": 7
   }
 }
 
