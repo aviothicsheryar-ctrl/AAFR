@@ -1,5 +1,5 @@
 {
-  "environment": "live",
+  "environment": "demo",
   "account": {
     "size": 150000,
     "max_risk_per_trade": 0.5,
@@ -10,10 +10,13 @@
     "demo": {
       "base_url": "https://demo.tradovateapi.com/v1",
       "auth_url": "https://demo.tradovateapi.com/auth/oauthtoken",
-      "client_id": "8378",
-      "client_secret": "4202d3a8-3268-4b44-9d95-4a75a9dd6f66",
-      "username": "AafrLive",
-      "password": "AafrAutomation!23"
+      "client_id": "8445",
+      "client_secret": "ccc67e98-1574-442c-88df-ab059288de7b",
+      "username": "Andrewv23",
+      "password": "Anything123!",
+      "app_id": "Demo",
+      "app_version": "0.0.1",
+      "device_id": "b6ee1a40-6cb2-fbe5-07bc-6503684a2c4c"
     },
     "live": {
       "base_url": "https://live.tradovateapi.com/v1",
@@ -21,7 +24,10 @@
       "client_id": "8378",
       "client_secret": "4202d3a8-3268-4b44-9d95-4a75a9dd6f66",
       "username": "AafrLive",
-      "password": "AafrAutomation!23"
+      "password": "AafrAutomation!23",
+      "app_id": "AAFR Trading System",
+      "app_version": "1.0",
+      "device_id": "aafr-device-001"
     }
   },
   "icc": {

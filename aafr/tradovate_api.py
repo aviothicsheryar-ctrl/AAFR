@@ -62,19 +62,20 @@ class TradovateAPI:
         """
         try:
             # Tradovate API authentication format
+            app_id = self.api_config.get('app_id', 'AAFR Trading System')
+            app_version = self.api_config.get('app_version', '1.0')
+            device_id = self.api_config.get('device_id', 'aafr-device-001')
+            password = self.api_config.get('password', '')
+            
             auth_data = {
                 'name': self.api_config['username'],
-                'appId': 'AAFR Trading System',
-                'appVersion': '1.0',
+                'appId': app_id,
+                'appVersion': app_version,
                 'cid': int(self.api_config['client_id']),  # Convert to int
                 'sec': self.api_config['client_secret'],
-                'deviceId': 'aafr-device-001'  # Fixed device ID for this application
+                'deviceId': device_id,
+                'password': password
             }
-            
-            # Only include password if it's provided and not empty
-            password = self.api_config.get('password', '').strip()
-            if password:
-                auth_data['password'] = password
             
             response = self.session.post(
                 self.auth_url,
