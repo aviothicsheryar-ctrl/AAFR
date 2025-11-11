@@ -1,0 +1,37 @@
+{
+  "total_trades": 2,
+  "win_rate": 0.0,
+  "avg_r": -1.0,
+  "net_pnl": -699.8576190245803,
+  "max_drawdown": 699.8576190245803,
+  "max_drawdown_pct": 0.46657174601638685,
+  "longest_win_streak": 0,
+  "longest_loss_streak": 2,
+  "final_equity": 149300.14238097542,
+  "wins": 0,
+  "losses": 2,
+  "profit_factor": 0.0,
+  "sharpe_ratio": 0.0,
+  "avg_win": 0.0,
+  "avg_loss": 349.9288095122902,
+  "avg_win_r": 0.0,
+  "avg_loss_r": 1.0,
+  "gross_profit": 0.0,
+  "gross_loss": 699.8576190245803,
+  "expectancy": -349.9288095122902,
+  "avg_trade_duration": 0.5416666666666667,
+  "equity_curve_summary": {
+    "min_equity": 149300.14238097542,
+    "max_equity": 150000.0,
+    "peak_equity_date": "2025-11-07 12:35:43.367697",
+    "peak_equity_value": 150000.0
+  },
+  "backtest_metadata": {
+    "start_time": "2025-11-07 12:35:43.367690",
+    "end_time": "2025-11-07 12:36:11.340934",
+    "duration_seconds": 27.973244,
+    "symbol": "MNQ",
+    "start_equity": 150000.0,
+    "candles_analyzed": 10000
+  }
+}
