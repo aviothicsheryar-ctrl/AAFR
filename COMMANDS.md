@@ -156,6 +156,27 @@ This script:
 - Exports results to `backtest_results/nq_full/`
 - Creates metrics JSON and equity curve CSV files
 
+### Dual Strategy Backtest (AAFR + AJR)
+```bash
+# Backtest both strategies
+python scripts/backtest_dual_strategy.py --symbol NQ --months 2
+
+# Backtest only AAFR
+python scripts/backtest_dual_strategy.py --symbol NQ --strategies AAFR
+
+# Backtest only AJR
+python scripts/backtest_dual_strategy.py --symbol NQ --strategies AJR
+
+# Use custom data file
+python scripts/backtest_dual_strategy.py --symbol NQ --data-file data/my_data.json
+```
+
+This script:
+- Runs backtests for AAFR and/or AJR strategies on the same data
+- Compares performance metrics side-by-side
+- Exports results separately for each strategy
+- Outputs to `backtest_results/dual_strategy/`
+
 ### Spot Check Other Instruments (2-7 Days)
 ```bash
 python scripts/backtest_spot_check.py

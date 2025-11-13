@@ -1,0 +1,77 @@
+{
+  "aafr_connection": {
+    "host": "localhost",
+    "port": 8765
+  },
+  "timing": {
+    "click_delay_ms": 100,
+    "drag_delay_ms": 200,
+    "pre_action_delay_ms": 50,
+    "post_action_delay_ms": 150,
+    "retry_delay_ms": 500
+  },
+  "retry_settings": {
+    "max_retries": 1,
+    "enable_cancel_replace_fallback": true
+  },
+  "trail_settings": {
+    "structure_buffer_ticks": 2,
+    "atr_multiplier": 0.75,
+    "min_distance_ticks": 2
+  },
+  "safety": {
+    "require_dom_focus": true,
+    "validate_coordinates": true,
+    "dry_run_mode": true
+  },
+  "dom_coordinates": {
+    "NQ": {
+      "bid_column_x": 759,
+      "ask_column_x": 787,
+      "top_price": 25633.0,
+      "price_row_height": 0,
+      "dom_window_bounds": {
+        "left": 782,
+        "top": 830,
+        "right": 391,
+        "bottom": 1004
+      }
+    },
+    "ES": {
+      "bid_column_x": 819,
+      "ask_column_x": 943,
+      "top_price": 6847.0,
+      "price_row_height": 61,
+      "dom_window_bounds": {
+        "left": 885,
+        "top": 199,
+        "right": 1333,
+        "bottom": 981
+      }
+    },
+    "CL": {
+      "bid_column_x": 1484,
+      "ask_column_x": 1709,
+      "top_price": 60.48,
+      "price_row_height": 22,
+      "dom_window_bounds": {
+        "left": 1367,
+        "top": 232,
+        "right": 1848,
+        "bottom": 985
+      }
+    },
+    "GC": {
+      "bid_column_x": 536,
+      "ask_column_x": 728,
+      "top_price": 4148.0,
+      "price_row_height": 20,
+      "dom_window_bounds": {
+        "left": 424,
+        "top": 203,
+        "right": 851,
+        "bottom": 974
+      }
+    }
+  }
+}
