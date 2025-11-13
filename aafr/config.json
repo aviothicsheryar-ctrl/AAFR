@@ -4,7 +4,8 @@
     "size": 150000,
     "max_risk_per_trade": 0.5,
     "daily_loss_limit": 1500,
-    "enabled_instruments": ["MNQ", "MES", "MGC", "MCL", "MYM"]
+    "enabled_instruments": ["NQ", "ES", "GC", "CL"],
+    "max_risk_usd_per_trade": 750
   },
   "tradovate": {
     "demo": {
@@ -41,46 +42,71 @@
     "CPI"
   ],
   "instruments": {
-    "MNQ": {
-      "symbol": "MNQ",
-      "name": "Micro E-mini NASDAQ-100",
+    "NQ": {
+      "symbol": "NQ",
+      "name": "E-mini NASDAQ-100",
       "tick_size": 0.25,
-      "tick_value": 0.50,
-      "contract_size": 1
+      "tick_value": 5.00,
+      "contract_size": 1,
+      "emini": true
     },
-    "MES": {
-      "symbol": "MES",
-      "name": "Micro E-mini S&P 500",
+    "ES": {
+      "symbol": "ES",
+      "name": "E-mini S&P 500",
       "tick_size": 0.25,
-      "tick_value": 0.50,
-      "contract_size": 1
+      "tick_value": 12.50,
+      "contract_size": 1,
+      "emini": true
     },
-    "MGC": {
-      "symbol": "MGC",
-      "name": "Micro Gold",
+    "GC": {
+      "symbol": "GC",
+      "name": "Gold (100 oz)",
       "tick_size": 0.10,
-      "tick_value": 1.00,
-      "contract_size": 1
+      "tick_value": 10.00,
+      "contract_size": 1,
+      "emini": true
     },
-    "MCL": {
-      "symbol": "MCL",
-      "name": "Micro Crude Oil",
+    "CL": {
+      "symbol": "CL",
+      "name": "WTI Crude Oil (1,000 bbl)",
       "tick_size": 0.01,
-      "tick_value": 1.00,
-      "contract_size": 1
-    },
-    "MYM": {
-      "symbol": "MYM",
-      "name": "Micro E-mini Dow Jones",
-      "tick_size": 1.00,
-      "tick_value": 0.50,
-      "contract_size": 1
+      "tick_value": 10.00,
+      "contract_size": 1,
+      "emini": true
     }
   },
   "backtest_settings": {
     "default_months_history": 3,
     "default_interval_minutes": 1,
     "spot_check_days_history": 7
+  },
+  "gui_bot": {
+    "enabled": true,
+    "websocket_host": "localhost",
+    "websocket_port": 8765,
+    "mode": "EVAL"
+  },
+  "arbiter": {
+    "enabled": true,
+    "max_positions_per_symbol": 1,
+    "allow_signal_merging": true,
+    "max_merged_size_multiplier": 1.5,
+    "priority_strategy": "time_based",
+    "continuation_hours": [[9, 30], [15, 30]],
+    "reversal_windows": [[8, 30], [9, 30], [15, 30], [16, 0]]
+  },
+  "strategies": {
+    "AAFR": {
+      "enabled": true,
+      "priority": 1
+    },
+    "AJR": {
+      "enabled": true,
+      "priority": 2,
+      "gap_lookback_candles": 50,
+      "min_gap_size_ticks": 10,
+      "max_gap_age_candles": 100
+    }
   }
 }
 

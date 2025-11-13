@@ -14,8 +14,9 @@ from aafr.cvd_module import CVDCalculator
 from aafr.risk_engine import RiskEngine
 from aafr.tradovate_api import TradovateAPI
 from aafr.backtester import Backtester
-from aafr.utils import format_trade_output, log_trade_signal, load_config, load_candles_from_csv, load_candles_from_json, get_formatted_timestamp, get_micro_symbol
+from aafr.utils import format_trade_output, log_trade_signal, load_config, load_candles_from_csv, load_candles_from_json, get_formatted_timestamp, get_micro_symbol, calculate_atr
 from aafr.telegram_bot import send_telegram_alert, format_telegram_message
+from aafr.websocket_server import WebSocketServer
 
 
 class AAFRTradingSystem:
@@ -39,6 +40,14 @@ class AAFRTradingSystem:
         self.cvd_calculator = CVDCalculator()
         self.risk_engine = RiskEngine(config_path)
         
+        # Initialize WebSocket server for GUI bot integration
+        gui_bot_config = self.config.get('gui_bot', {})
+        self.ws_server = None
+        if gui_bot_config.get('enabled', False):
+            ws_host = gui_bot_config.get('websocket_host', 'localhost')
+            ws_port = gui_bot_config.get('websocket_port', 8765)
+            self.ws_server = WebSocketServer(ws_host, ws_port)
+        
         # System state
         self.running = False
         self.candle_buffers = {}  # Per-symbol candle buffers for independent state
@@ -61,8 +70,14 @@ class AAFRTradingSystem:
         self.running = True
         
         try:
-            # Start monitoring each symbol
+            # Start WebSocket server if enabled
             tasks = []
+            if self.ws_server:
+                ws_task = asyncio.create_task(self.ws_server.start())
+                tasks.append(ws_task)
+                await asyncio.sleep(0.5)  # Give server time to start
+            
+            # Start monitoring each symbol
             for symbol in symbols:
                 task = asyncio.create_task(self._monitor_symbol(symbol))
                 tasks.append(task)
@@ -71,6 +86,8 @@ class AAFRTradingSystem:
             await asyncio.gather(*tasks)
         except KeyboardInterrupt:
             print("\n\n[INFO] Stopping monitoring...")
+            if self.ws_server:
+                await self.ws_server.stop()
             self.stop()
             print("[OK] System stopped gracefully")
     
@@ -211,6 +228,10 @@ class AAFRTradingSystem:
         telegram_msg = format_telegram_message(signal)
         send_telegram_alert(telegram_msg)
         
+        # Emit WebSocket event for GUI bot
+        if self.ws_server:
+            await self._emit_new_position_event(signal, icc_structure, candle_buffer)
+        
         # TODO: Execute trade via API (paper trading in demo)
         # order_result = await self._place_trade_order(signal)
         
@@ -219,6 +240,89 @@ class AAFRTradingSystem:
         
         # Reset detector to avoid duplicate signals
         self.icc_detector.reset()
+    
+    async def _emit_new_position_event(self, signal: Dict, icc_structure: Dict, 
+                                       candle_buffer: List[Dict]) -> None:
+        """
+        Emit NEW_POSITION event to GUI bot via WebSocket.
+        
+        Args:
+            signal: Trade signal dictionary
+            icc_structure: ICC structure details
+            candle_buffer: Historical candle data
+        """
+        # Calculate ATR for stop buffer
+        atr = calculate_atr(candle_buffer, period=14) if len(candle_buffer) >= 14 else 0
+        
+        # Get GUI bot mode from config
+        gui_bot_config = self.config.get('gui_bot', {})
+        mode = gui_bot_config.get('mode', 'EVAL')
+        
+        # Calculate TP ladder (divide position into 3 levels)
+        position_size = signal['position_size']
+        tp_ladder = self._calculate_tp_ladder(
+            signal['entry'],
+            signal['take_profit'],
+            position_size,
+            signal['direction']
+        )
+        
+        # Build NEW_POSITION event
+        event = {
+            'event': 'NEW_POSITION',
+            'symbol': signal['symbol'],
+            'side': signal['direction'],
+            'entry_price': signal['entry'],
+            'size': position_size,
+            'initial_stop': signal['stop_loss'],
+            'tps': tp_ladder,
+            'mode': mode,
+            'atr': round(atr, 2) if atr else 0,
+            'timestamp': signal['timestamp'].isoformat()
+        }
+        
+        # Broadcast event
+        await self.ws_server.broadcast_event(event)
+        print(f"[WS] Emitted NEW_POSITION event for {signal['symbol']}")
+    
+    def _calculate_tp_ladder(self, entry: float, final_tp: float, size: int, 
+                            direction: str) -> List[Dict]:
+        """
+        Calculate TP ladder with 3 levels.
+        
+        Args:
+            entry: Entry price
+            final_tp: Final take profit target
+            size: Total position size
+            direction: 'LONG' or 'SHORT'
+        
+        Returns:
+            List of TP dictionaries with price and qty
+        """
+        if size <= 0:
+            return []
+        
+        # Divide position into thirds (or as close as possible)
+        qty_per_level = max(1, size // 3)
+        remaining = size - (qty_per_level * 2)
+        
+        # Calculate TP levels (33%, 66%, 100% of distance)
+        distance = abs(final_tp - entry)
+        
+        if direction == 'LONG':
+            tp1_price = entry + (distance * 0.33)
+            tp2_price = entry + (distance * 0.66)
+            tp3_price = final_tp
+        else:  # SHORT
+            tp1_price = entry - (distance * 0.33)
+            tp2_price = entry - (distance * 0.66)
+            tp3_price = final_tp
+        
+        return [
+            {'price': round(tp1_price, 2), 'qty': qty_per_level},
+            {'price': round(tp2_price, 2), 'qty': qty_per_level},
+            {'price': round(tp3_price, 2), 'qty': remaining}
+        ]
     
     async def _place_trade_order(self, signal: Dict) -> Optional[Dict]:
         """
